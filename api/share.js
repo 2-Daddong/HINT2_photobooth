@@ -3,7 +3,8 @@ import { put } from '@vercel/blob';
 import { randomUUID } from 'node:crypto';
 
 export default async function handler(req, res) {
-
+    console.log('[SHARE API VERSION 4]');
+    
     // 1. POST 요청만 허용
     if (req.method !== 'POST') {
         return res.status(405).json({
@@ -80,8 +81,10 @@ export default async function handler(req, res) {
             access: 'public',
             contentType: 'image/jpeg',
             addRandomSuffix: true,
-            storeId: storeId,
-            oidcToken: oidcToken
+            storeId: process.env.BLOB_STORE_ID,
+            oidcToken:
+                req.headers['x-vercel-oidc-token'] ||
+                process.env.VERCEL_OIDC_TOKEN
         });
 
         console.log('[Blob] 이미지 업로드 성공');

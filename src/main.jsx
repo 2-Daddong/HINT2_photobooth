@@ -18,6 +18,26 @@ async function cut(e){
   const im=await loadImage(custom);
   if(!segment)segment=await InteractiveSegmenter.createFromOptions(await FilesetResolver.forVisionTasks(wasm),{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/latest/magic_touch.tflite'},outputCategoryMask:true,outputConfidenceMasks:false});
   const r=segment.segment(im,{keypoint:{x,y}});
+  console.log('클릭 좌표:', x, y);
+  console.log('Segmentation 결과:', r);
+  
+  const debugMask = r.categoryMask;
+  
+  if (debugMask) {
+      const maskData = debugMask.getAsUint8Array();
+  
+      const counts = {};
+  
+      for (const value of maskData) {
+          counts[value] = (counts[value] || 0) + 1;
+      }
+  
+      console.log('Mask 크기:', debugMask.width, debugMask.height);
+      console.log('Mask 고유값:', [...new Set(maskData)]);
+      console.log('Mask 픽셀 분포:', counts);
+  } else {
+      console.error('Category Mask가 반환되지 않았습니다.');
+  }
   try{
    const mask=r.categoryMask;if(!mask)throw Error('마스크 없음');
    const data=mask.getAsUint8Array(),c=document.createElement('canvas');c.width=mask.width;c.height=mask.height;

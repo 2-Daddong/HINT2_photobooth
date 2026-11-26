@@ -18,8 +18,9 @@ async function cut(e){
   const im=await loadImage(custom);
   if(!segment)segment=await InteractiveSegmenter.createFromOptions(await FilesetResolver.forVisionTasks(wasm),{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/latest/magic_touch.tflite'},outputCategoryMask:true,outputConfidenceMasks:false});
   const r=segment.segment(im,{keypoint:{x,y}});
-  console.log('클릭 좌표:', x, y);
-  console.log('Segmentation 결과:', r);
+  console.log('[AI Sticker] Inference completed');
+  console.log('Click position:', x, y);
+  console.log('Segmentation result:', r);
   
   const debugMask = r.categoryMask;
   
@@ -32,11 +33,27 @@ async function cut(e){
           counts[value] = (counts[value] || 0) + 1;
       }
   
-      console.log('Mask 크기:', debugMask.width, debugMask.height);
-      console.log('Mask 고유값:', [...new Set(maskData)]);
-      console.log('Mask 픽셀 분포:', counts);
+      console.log('Original image:', im.width, im.height);
+      console.log('Mask size:', debugMask.width, debugMask.height);
+      console.log('Mask unique values:', [...new Set(maskData)]);
+      console.log('Mask distribution:', counts);
+  
+      const px = Math.min(
+          debugMask.width - 1,
+          Math.max(0, Math.floor(x * debugMask.width))
+      );
+  
+      const py = Math.min(
+          debugMask.height - 1,
+          Math.max(0, Math.floor(y * debugMask.height))
+      );
+  
+      console.log(
+          'Clicked pixel class:',
+          maskData[py * debugMask.width + px]
+      );
   } else {
-      console.error('Category Mask가 반환되지 않았습니다.');
+      console.error('Category Mask is missing');
   }
   try{
    const mask=r.categoryMask;if(!mask)throw Error('마스크 없음');
@@ -47,7 +64,9 @@ async function cut(e){
    if(right<0)throw Error('선택한 대상이 검출되지 않았습니다. 다시 클릭해주세요.');
    g.putImageData(d,0,0);const cropped=document.createElement('canvas');cropped.width=right-left+1;cropped.height=bottom-top+1;cropped.getContext('2d').drawImage(c,left,top,cropped.width,cropped.height,0,0,cropped.width,cropped.height);setCutout(cropped.toDataURL('image/png'));
   }finally{r.close?.()}
- }catch(e){E('누끼 생성 실패: '+e.message)}finally{B(false)}
+ }catch(e){
+    console.error('[AI Sticker Error]', e);
+    E('누끼 생성 실패: '+e.message);
 }
 async function confirmSticker(){if(!cutout||busy)return;B(true);try{let src=cutout;if(outline){const im=await loadImage(src),c=document.createElement('canvas'),pad=Math.max(3,Math.round(Math.max(im.width,im.height)*.025));c.width=im.width+pad*2;c.height=im.height+pad*2;const g=c.getContext('2d');for(let i=0;i<64;i++){const a=i*Math.PI/32;g.drawImage(im,pad+Math.cos(a)*pad,pad+Math.sin(a)*pad)}g.globalCompositeOperation='source-in';g.fillStyle='white';g.fillRect(0,0,c.width,c.height);g.globalCompositeOperation='source-over';g.drawImage(im,pad,pad);src=c.toDataURL('image/png')}add({src});resetCut();P(4)}catch(e){E(e.message)}finally{B(false)}}
 async function share(){B(true);try{const res=await fetch('/api/share',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:result})});const d=await res.json();if(!res.ok)throw Error(d.error);K(d.url);Q(await QRCode.toDataURL(d.url))}catch(e){E('QR 공유: '+e.message)}finally{B(false)}}

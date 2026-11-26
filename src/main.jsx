@@ -60,7 +60,10 @@ async function cut(e){
    const data=mask.getAsUint8Array(),c=document.createElement('canvas');c.width=mask.width;c.height=mask.height;
    const g=c.getContext('2d');g.drawImage(im,0,0,c.width,c.height);const d=g.getImageData(0,0,c.width,c.height);
    let left=c.width,top=c.height,right=-1,bottom=-1;
-   for(let i=0;i<data.length;i++){const keep=data[i]===1;d.data[i*4+3]=keep?255:0;if(keep){const px=i%c.width,py=Math.floor(i/c.width);left=Math.min(left,px);right=Math.max(right,px);top=Math.min(top,py);bottom=Math.max(bottom,py)}}
+   for(let i=0;i<data.length;i++){
+    const keep = data[i] === 255;
+    d.data[i*4+3] = keep ? 255 : 0;
+    if(keep){const px=i%c.width,py=Math.floor(i/c.width);left=Math.min(left,px);right=Math.max(right,px);top=Math.min(top,py);bottom=Math.max(bottom,py)}}
    if(right<0)throw Error('선택한 대상이 검출되지 않았습니다. 다시 클릭해주세요.');
    g.putImageData(d,0,0);const cropped=document.createElement('canvas');cropped.width=right-left+1;cropped.height=bottom-top+1;cropped.getContext('2d').drawImage(c,left,top,cropped.width,cropped.height,0,0,cropped.width,cropped.height);setCutout(cropped.toDataURL('image/png'));
   }finally{r.close?.()}

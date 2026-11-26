@@ -1,3 +1,4 @@
+
 import { put } from '@vercel/blob';
 import { randomUUID } from 'node:crypto';
 
@@ -10,7 +11,7 @@ export default async function handler(req, res) {
         });
     }
 
-    // 2. QR 공유 기능 활성화 여부 확인
+    // 2. QR 공유 기능 활성화 확인
     if (process.env.ENABLE_PUBLIC_SHARE !== 'true') {
         return res.status(403).json({
             error: '공유 기능이 비활성화되어 있습니다.'
@@ -19,7 +20,30 @@ export default async function handler(req, res) {
 
     try {
 
-        // 3. 최종 합성 이미지 수신
+        // 3. 인증 정보 선언
+        const storeId = process.env.BLOB_STORE_ID;
+
+        const oidcToken =
+            req.headers['x-vercel-oidc-token'] ||
+            process.env.VERCEL_OIDC_TOKEN;
+
+        // 4. 인증 정보 확인
+        console.log('[Blob Auth Debug]', {
+            storeIdExists: !!storeId,
+            oidcTokenExists: !!oidcToken,
+            readWriteTokenExists:
+                !!process.env.BLOB_READ_WRITE_TOKEN
+        });
+
+        if (!storeId) {
+            throw new Error('BLOB_STORE_ID not found');
+        }
+
+        if (!oidcToken) {
+            throw new Error('OIDC token not found');
+        }
+
+        // 5. 이미지 수신
         const image = req.body?.image;
 
         if (
@@ -31,13 +55,13 @@ export default async function handler(req, res) {
             });
         }
 
-        // 4. Base64 이미지를 Buffer로 변환
+        // 6. Base64 이미지 변환
         const bytes = Buffer.from(
             image.split(',')[1],
             'base64'
         );
 
-        // 5. 이미지 형식 및 용량 확인
+        // 7. 이미지 유효성 검사
         if (
             bytes.length > 2 * 1024 * 1024 ||
             bytes[0] !== 255 ||
@@ -48,11 +72,10 @@ export default async function handler(req, res) {
             });
         }
 
-        // 6. 고유 파일명 생성
+        // 8. 고유 파일명 생성
         const filename = `photos/${randomUUID()}.jpg`;
 
-        // 7. Vercel Blob 저장
-        // OIDC 인증 자동 적용
+        // 9. Vercel Blob 이미지 저장
         const blob = await put(filename, bytes, {
             access: 'public',
             contentType: 'image/jpeg',
@@ -63,14 +86,13 @@ export default async function handler(req, res) {
 
         console.log('[Blob] 이미지 업로드 성공');
 
-        // 8. QR 생성에 사용할 URL 반환
+        // 10. 공유 URL 반환
         return res.status(200).json({
             url: blob.url
         });
 
     } catch (e) {
 
-        // 9. 오류 발생 시 Vercel 로그에 기록
         console.error('[Blob upload error]', e);
 
         return res.status(500).json({

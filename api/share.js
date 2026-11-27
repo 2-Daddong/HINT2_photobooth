@@ -80,11 +80,7 @@ export default async function handler(req, res) {
         const blob = await put(filename, bytes, {
             access: 'public',
             contentType: 'image/jpeg',
-            addRandomSuffix: true,
-            storeId: process.env.BLOB_STORE_ID,
-            oidcToken:
-                req.headers['x-vercel-oidc-token'] ||
-                process.env.VERCEL_OIDC_TOKEN
+            addRandomSuffix: true
         });
 
         console.log('[Blob] 이미지 업로드 성공');

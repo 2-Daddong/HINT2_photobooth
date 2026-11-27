@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm list @vercel/blob && vite build",
+    "build": "npm install @vercel/blob@2.9.0 --prefer-online && npm list @vercel/blob && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -14,7 +14,7 @@
     "react-dom": "^18.3.1",
     "@mediapipe/tasks-vision": "0.10.21",
     "qrcode": "^1.5.4",
-    "@vercel/blob": "latest"
+    "@vercel/blob": "2.9.0"
   },
   "devDependencies": {
     "vite": "^6.1.0"
